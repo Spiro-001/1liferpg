@@ -20,19 +20,47 @@ const GameScreenCanvas = (props) => {
 
   let objectPos = []; // {objOne: [x, y, xmax, ymax]}
 
-  const boundaryCheck = (x, y, nextMoveX = 0, nextMoveY = 0) => {
+  const boundaryCheckX = (x, y, nextMoveX = 0) => {
     for (const object of objectPos) {
       if (
-        (object.block[0] <= x + nextMoveX + 5 &&
-          object.block[2] >= x + nextMoveX + 5 &&
-          object.block[1] <= y &&
-          object.block[3] >= y) ||
-        (object.block[0] <= x + boxSize + nextMoveX &&
-          object.block[2] >= x + boxSize + nextMoveX &&
-          object.block[1] <= y + boxSize &&
-          object.block[3] >= y + boxSize)
+        object.block[0] <= x + nextMoveX + boxSize &&
+        object.block[2] >= x + nextMoveX &&
+        object.block[1] < y + boxSize &&
+        object.block[3] > y
       ) {
+        if (object.block[2] >= x + nextMoveX && object.block[2] - 10 <= x) {
+          posX = object.block[2] + 1;
+        } else if (
+          object.block[0] <= x + nextMoveX + boxSize &&
+          object.block[0] - 50 >= x
+        ) {
+          posX = object.block[0] + boxSize - 50;
+        }
         return true;
+      }
+    }
+    return false;
+  };
+
+  const boundaryCheckY = (x, y, nextMoveY = posY) => {
+    for (const object of objectPos) {
+      if (
+        object.block[0] <= x + boxSize &&
+        object.block[2] >= x &&
+        object.block[1] <= nextMoveY + boxSize &&
+        object.block[3] >= nextMoveY
+      ) {
+        if (object.block[3] >= nextMoveY && object.block[3] - 10 <= y) {
+          posY = object.block[3] + 1;
+          isOnFloor.current = true;
+        } else if (object.block[1] <= nextMoveY + boxSize - object.block[1]) {
+          posY = object.block[1] - boxSize - 1;
+          console.log(isOnFloor.current);
+          isOnFloor.current = false;
+        }
+        return true;
+      } else {
+        isOnFloor.current = false;
       }
     }
     return false;
@@ -41,7 +69,7 @@ const GameScreenCanvas = (props) => {
   const moveX = async (key, context) => {
     moveAnim = true;
     while (currentInputs.current[key] !== 0) {
-      if (boundaryCheck(posX, posY, currentInputs.current[key])) {
+      if (boundaryCheckX(posX, posY, currentInputs.current[key])) {
       } else {
         for (let i = 0; i < Math.abs(currentInputs.current[key]); i++) {
           posX +=
@@ -65,11 +93,17 @@ const GameScreenCanvas = (props) => {
     let x = 0;
     while (finish < 2) {
       isOnFloor.current = false;
-      if (boundaryCheck(posX, posY)) {
+      if (
+        boundaryCheckY(
+          posX,
+          posY,
+          -0.5 * Math.pow(x, 2) + jumpStrength * x + startHeight
+        )
+      ) {
         finish = 2;
       } else {
+        posY = -0.5 * Math.pow(x, 2) + jumpStrength * x + startHeight;
       }
-      posY = -0.5 * Math.pow(x, 2) + jumpStrength * x + startHeight;
       if (posY <= 0) finish++;
       x++;
       context.fillStyle = "#000000";
@@ -78,10 +112,9 @@ const GameScreenCanvas = (props) => {
       context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
       await new Promise((res) => setTimeout(res, 10));
     }
-    posY = 0;
+    posY = posY < 0 ? 0 : posY;
     context.fillStyle = "#000000";
     context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
-    isOnFloor.current = true;
     return x;
   };
 
@@ -94,6 +127,23 @@ const GameScreenCanvas = (props) => {
   const updateTick = async () => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const context = gameScreenCanvas.getContext("2d");
+
+    if (!isOnFloor.current) {
+      posY -= 6;
+      if (posY < 0) {
+        posY = 0;
+        isOnFloor.current = true;
+      }
+      context.fillStyle = "#000000";
+      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+      context.fillStyle = "#000000";
+      context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
+    } else {
+      boundaryCheckY(posX, posY, 10);
+      //   console.log("floor");
+    }
+
+    if (posY === 0) isOnFloor.current = true;
 
     if (currentInputs.current["a"] !== 0 && currentInputs.current["d"] === 0) {
       if (!moveAnim) moveX("a", context);
@@ -131,10 +181,10 @@ const GameScreenCanvas = (props) => {
       -100
     );
 
-    levelContext.fillRect(0, context.canvas.height, 200, -100);
+    levelContext.fillRect(0, context.canvas.height - 200, 200, 100);
 
     objectPos.push({
-      block: [0, 0, 200, 100],
+      block: [0, 100, 200, 200],
     });
 
     objectPos.push({
