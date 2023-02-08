@@ -1,0 +1,22 @@
+.leaderboard {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    align-content: center;
+
+    padding: 18px 48px;
+    border-radius: 10px;
+    height: 648px;
+    min-width: 384px;
+    gap: 12px 0px;
+
+    box-sizing: border-box;
+    
+    border: 1px solid black;
+    
+}
+
+.leaderboard-title {
+    margin: 0px;
+}

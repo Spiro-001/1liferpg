@@ -1,0 +1,8 @@
+.screen {
+    height: 648px;
+    min-width: 1152px;
+
+    border-radius: 10px;
+
+    border: 1px solid black;
+}
