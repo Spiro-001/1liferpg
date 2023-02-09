@@ -10,12 +10,13 @@ const GameScreenCanvas = (props) => {
   const currentInputs = useRef({ w: 0, s: 0, a: 0, d: 0 });
 
   let posX = 500;
-  let posY = 0;
+  let posY = 500;
+  let floor = 0;
 
   let boxSize = 20;
 
   let moveAnim = false;
-  let jumpStrength = 15;
+  let jumpStrength = 20;
   const isOnFloor = useRef(true);
 
   let objectPos = []; // {objOne: [x, y, xmax, ymax]}
@@ -29,7 +30,7 @@ const GameScreenCanvas = (props) => {
         object.block[3] > y
       ) {
         if (object.block[2] >= x + nextMoveX && object.block[2] - 10 <= x) {
-          posX = object.block[2] + 1;
+          posX = object.block[2] + 5;
         } else if (
           object.block[0] <= x + nextMoveX + boxSize &&
           object.block[0] - 50 >= x
@@ -43,6 +44,12 @@ const GameScreenCanvas = (props) => {
   };
 
   const boundaryCheckY = (x, y, nextMoveY = posY) => {
+    // console.log(posY);
+    // console.log(isOnFloor.current);
+    if (posY <= floor) {
+      posY = floor;
+      isOnFloor.current = true;
+    }
     for (const object of objectPos) {
       if (
         object.block[0] <= x + boxSize &&
@@ -51,16 +58,14 @@ const GameScreenCanvas = (props) => {
         object.block[3] >= nextMoveY
       ) {
         if (object.block[3] >= nextMoveY && object.block[3] - 10 <= y) {
-          posY = object.block[3] + 1;
+          posY = object.block[3] + 5;
           isOnFloor.current = true;
+          console.log("2");
         } else if (object.block[1] <= nextMoveY + boxSize - object.block[1]) {
-          posY = object.block[1] - boxSize - 1;
-          console.log(isOnFloor.current);
+          posY = object.block[1] - boxSize - 5;
           isOnFloor.current = false;
         }
         return true;
-      } else {
-        isOnFloor.current = false;
       }
     }
     return false;
@@ -69,7 +74,7 @@ const GameScreenCanvas = (props) => {
   const moveX = async (key, context) => {
     moveAnim = true;
     while (currentInputs.current[key] !== 0) {
-      if (boundaryCheckX(posX, posY, currentInputs.current[key])) {
+      if (boundaryCheckX(posX, posY, currentInputs.current[key] * 2)) {
       } else {
         for (let i = 0; i < Math.abs(currentInputs.current[key]); i++) {
           posX +=
@@ -119,8 +124,6 @@ const GameScreenCanvas = (props) => {
   };
 
   useKeypress(["a", "d"], async (event) => {
-    const gameScreenCanvas = gameScreenCanvasRef.current;
-    const context = gameScreenCanvas.getContext("2d");
     currentInputs.current[event.key] = KeyboardInput(event.keyCode, 5);
   });
 
@@ -128,22 +131,20 @@ const GameScreenCanvas = (props) => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const context = gameScreenCanvas.getContext("2d");
 
-    if (!isOnFloor.current) {
-      posY -= 6;
-      if (posY < 0) {
-        posY = 0;
-        isOnFloor.current = true;
-      }
+    // console.log(isOnFloor.current);
+
+    // if (boundaryCheckX(posX, posY)) {
+    //   posX -= 10;
+    // }
+
+    if (!boundaryCheckY(posX, posY, posY - 5)) {
+      if (posY < 0) posY = 0;
       context.fillStyle = "#000000";
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       context.fillStyle = "#000000";
       context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
-    } else {
-      boundaryCheckY(posX, posY, 10);
-      //   console.log("floor");
+      if (posY !== floor) posY -= 5;
     }
-
-    if (posY === 0) isOnFloor.current = true;
 
     if (currentInputs.current["a"] !== 0 && currentInputs.current["d"] === 0) {
       if (!moveAnim) moveX("a", context);
@@ -181,10 +182,25 @@ const GameScreenCanvas = (props) => {
       -100
     );
 
+    // levelContext.fillRect(
+    //   0,
+    //   context.canvas.height - 10,
+    //   context.canvas.width,
+    //   10
+    // );
     levelContext.fillRect(0, context.canvas.height - 200, 200, 100);
+    levelContext.fillRect(400, context.canvas.height, 200, -100);
+
+    // objectPos.push({
+    //   block: [0, 0, context.canvas.width, 10],
+    // });
 
     objectPos.push({
       block: [0, 100, 200, 200],
+    });
+
+    objectPos.push({
+      block: [400, 0, 600, 100],
     });
 
     objectPos.push({
