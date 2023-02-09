@@ -5,13 +5,17 @@ const { useRef, useEffect, useState } = require("react");
 
 const GameScreenCanvas = (props) => {
   const [updateKey, setUpdateKey] = useState(false);
+  const currentScore = useRef(0);
   const gameScreenCanvasRef = useRef(null);
   const levelRef = useRef(null);
+  const scoreRef = useRef(null);
   const currentInputs = useRef({ w: 0, s: 0, a: 0, d: 0 });
 
   let posX = 500;
   let posY = 500;
   let floor = 0;
+
+  let boxColor = "#FFFFFF";
 
   let boxSize = 20;
 
@@ -20,6 +24,21 @@ const GameScreenCanvas = (props) => {
   const isOnFloor = useRef(true);
 
   let objectPos = []; // {objOne: [x, y, xmax, ymax]}
+
+  //60
+  //
+
+  const scoreUpdater = (context, multipler = 1.0, flat = 0, extra = 0) => {
+    currentScore.current += 5 * multipler + flat + extra;
+    context.clearRect(context.canvas.width - 200, 0, context.canvas.width, 50);
+    context.font = "48px Pixelboy";
+    context.fillStyle = "#FFFFFF";
+    context.fillText(
+      `${currentScore.current.toLocaleString()}`,
+      context.canvas.width - (60 + currentScore.current.toString().length * 20),
+      45
+    );
+  };
 
   const boundaryCheckX = (x, y, nextMoveX = 0) => {
     for (const object of objectPos) {
@@ -85,7 +104,7 @@ const GameScreenCanvas = (props) => {
 
       context.fillStyle = "#000000";
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      context.fillStyle = "#000000";
+      context.fillStyle = boxColor;
       context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
       await new Promise((res) => setTimeout(res, 5));
     }
@@ -113,12 +132,12 @@ const GameScreenCanvas = (props) => {
       x++;
       context.fillStyle = "#000000";
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      context.fillStyle = "#000000";
+      context.fillStyle = boxColor;
       context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
       await new Promise((res) => setTimeout(res, 10));
     }
     posY = posY < 0 ? 0 : posY;
-    context.fillStyle = "#000000";
+    context.fillStyle = boxColor;
     context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
     return x;
   };
@@ -127,21 +146,27 @@ const GameScreenCanvas = (props) => {
     currentInputs.current[event.key] = KeyboardInput(event.keyCode, 5);
   });
 
+  useKeypress(["w", "s"], async (event) => {
+    const gameScreenCanvas = gameScreenCanvasRef.current;
+    const context = gameScreenCanvas.getContext("2d");
+    currentInputs.current[event.key] = KeyboardInput(event.keyCode);
+    if (isOnFloor.current) jump(context);
+  });
+
   const updateTick = async () => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const context = gameScreenCanvas.getContext("2d");
 
-    // console.log(isOnFloor.current);
+    const scoreCanvas = scoreRef.current;
+    const scoreContext = scoreCanvas.getContext("2d");
 
-    // if (boundaryCheckX(posX, posY)) {
-    //   posX -= 10;
-    // }
+    scoreUpdater(scoreContext);
 
     if (!boundaryCheckY(posX, posY, posY - 5)) {
       if (posY < 0) posY = 0;
       context.fillStyle = "#000000";
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      context.fillStyle = "#000000";
+      context.fillStyle = boxColor;
       context.fillRect(posX, context.canvas.height - posY, boxSize, -boxSize);
       if (posY !== floor) posY -= 5;
     }
@@ -155,15 +180,8 @@ const GameScreenCanvas = (props) => {
       if (!moveAnim) moveX("d", context);
     } else {
     }
-    setTimeout(updateTick, 5);
+    setTimeout(updateTick, 1);
   };
-
-  useKeypress(["w", "s"], async (event) => {
-    const gameScreenCanvas = gameScreenCanvasRef.current;
-    const context = gameScreenCanvas.getContext("2d");
-    currentInputs.current[event.key] = KeyboardInput(event.keyCode);
-    if (isOnFloor.current) jump(context);
-  });
 
   useEffect(() => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
@@ -182,18 +200,21 @@ const GameScreenCanvas = (props) => {
       -100
     );
 
-    // levelContext.fillRect(
-    //   0,
-    //   context.canvas.height - 10,
-    //   context.canvas.width,
-    //   10
-    // );
     levelContext.fillRect(0, context.canvas.height - 200, 200, 100);
     levelContext.fillRect(400, context.canvas.height, 200, -100);
 
-    // objectPos.push({
-    //   block: [0, 0, context.canvas.width, 10],
-    // });
+    objectPos.push({
+      block: [0, 0, 1, context.canvas.height],
+    });
+
+    objectPos.push({
+      block: [
+        context.canvas.width - 1,
+        0,
+        context.canvas.width,
+        context.canvas.height,
+      ],
+    });
 
     objectPos.push({
       block: [0, 100, 200, 200],
@@ -216,6 +237,7 @@ const GameScreenCanvas = (props) => {
 
   return (
     <>
+      <canvas ref={scoreRef} id="score" />
       <canvas ref={levelRef} {...props} id="level" />
       <canvas ref={gameScreenCanvasRef} {...props} />
     </>

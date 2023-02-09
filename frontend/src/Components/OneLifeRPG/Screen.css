@@ -1,8 +1,10 @@
 .screen {
+    position: relative;
     height: 648px;
     min-width: 1152px;
 
     border-radius: 10px;
+    overflow: hidden;
 
     border: 1px solid black;
 }

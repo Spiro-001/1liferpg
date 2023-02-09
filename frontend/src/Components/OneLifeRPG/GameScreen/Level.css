@@ -1,3 +1,19 @@
+@font-face {
+    font-family: Pixelboy;
+    src: url("./Fonts/Pixeboy-z8XGD.ttf");
+}
+
+@font-face {
+    font-family: PressStart;
+    src: url("./Fonts/PressStart2P-vaV7.ttf");
+}
+
+
 #level {
     position: absolute;
+}
+
+#score {
+    position: absolute;
+    right: 0px;
 }
