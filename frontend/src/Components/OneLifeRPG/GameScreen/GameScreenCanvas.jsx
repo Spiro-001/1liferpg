@@ -1,6 +1,8 @@
 import { KeyboardInput } from "../Controller";
+
 import "./Level.css";
 import useKeypress from "react-use-keypress";
+
 const { useRef, useEffect, useState } = require("react");
 
 const GameScreenCanvas = (props) => {
@@ -8,8 +10,15 @@ const GameScreenCanvas = (props) => {
   const currentScore = useRef(0);
   const gameScreenCanvasRef = useRef(null);
   const levelRef = useRef(null);
+  const enemyRef = useRef(null);
   const scoreRef = useRef(null);
+  const debug = useRef(null);
+
+  const hitIndicator = useRef(0);
+
   const currentInputs = useRef({ w: 0, s: 0, a: 0, d: 0 });
+
+  const attackAnim = new Image();
 
   let posX = 500;
   let posY = 500;
@@ -21,12 +30,12 @@ const GameScreenCanvas = (props) => {
 
   let moveAnim = false;
   let jumpStrength = 20;
+
+  let attackOneInit = false;
+
   const isOnFloor = useRef(true);
 
   let objectPos = []; // {objOne: [x, y, xmax, ymax]}
-
-  //60
-  //
 
   const scoreUpdater = (context, multipler = 1.0, flat = 0, extra = 0) => {
     currentScore.current += 5 * multipler + flat + extra;
@@ -79,7 +88,6 @@ const GameScreenCanvas = (props) => {
         if (object.block[3] >= nextMoveY && object.block[3] - 10 <= y) {
           posY = object.block[3] + 5;
           isOnFloor.current = true;
-          console.log("2");
         } else if (object.block[1] <= nextMoveY + boxSize - object.block[1]) {
           posY = object.block[1] - boxSize - 5;
           isOnFloor.current = false;
@@ -142,24 +150,77 @@ const GameScreenCanvas = (props) => {
     return x;
   };
 
+  const attackOne = async (context, angle, xaxis, yaxis) => {
+    attackOneInit = true;
+    for (let i = 0; i < context.canvas.width; i += 20) {
+      if (
+        posX >= 0 &&
+        posX <= i + 20 &&
+        posY >= yaxis - 20 &&
+        posY <= yaxis + 20
+      )
+        hitIndicator.current = 1;
+      else hitIndicator.current = 0;
+      context.fillStyle = "#FF0000";
+      context.fillRect(i, context.canvas.height - yaxis - 20, 20, 10);
+      await new Promise((res) => setTimeout(res, 5));
+    }
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    attackOneInit = false;
+  };
+
   useKeypress(["a", "d"], async (event) => {
     currentInputs.current[event.key] = KeyboardInput(event.keyCode, 5);
   });
 
-  useKeypress(["w", "s"], async (event) => {
+  useKeypress(["w"], async (event) => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const context = gameScreenCanvas.getContext("2d");
     currentInputs.current[event.key] = KeyboardInput(event.keyCode);
     if (isOnFloor.current) jump(context);
   });
 
+  useKeypress(" ", async (event) => {
+    const gameScreenCanvas = gameScreenCanvasRef.current;
+    const context = gameScreenCanvas.getContext("2d");
+  });
+
   const updateTick = async () => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const context = gameScreenCanvas.getContext("2d");
 
+    const enemyScreenCanvas = enemyRef.current;
+    const enemyContext = enemyScreenCanvas.getContext("2d");
+
     const scoreCanvas = scoreRef.current;
     const scoreContext = scoreCanvas.getContext("2d");
 
+    const debugCanvas = debug.current;
+    const debugContext = debugCanvas.getContext("2d");
+
+    if (hitIndicator.current === 0) {
+      debugContext.clearRect(
+        0,
+        0,
+        debugContext.canvas.width,
+        debugContext.canvas.height
+      );
+      debugContext.font = "72px Pixelboy";
+      debugContext.fillStyle = "#FFFFFF";
+      debugContext.fillText("Not Hit", 50, 50);
+    } else {
+      debugContext.clearRect(
+        0,
+        0,
+        debugContext.canvas.width,
+        debugContext.canvas.height
+      );
+      debugContext.font = "72px Pixelboy";
+      debugContext.fillStyle = "#FFFFFF";
+      debugContext.fillText("Hit", 50, 50);
+    }
+
+    if (!attackOneInit) attackOne(enemyContext, 0, posX, posY);
     scoreUpdater(scoreContext);
 
     if (!boundaryCheckY(posX, posY, posY - 5)) {
@@ -186,8 +247,12 @@ const GameScreenCanvas = (props) => {
   useEffect(() => {
     const gameScreenCanvas = gameScreenCanvasRef.current;
     const levelScreenCanvas = levelRef.current;
+    const enemyScreenCanvas = enemyRef.current;
+    const debugCanvas = debug.current;
     const context = gameScreenCanvas.getContext("2d");
     const levelContext = levelScreenCanvas.getContext("2d");
+    const enemyContext = enemyScreenCanvas.getContext("2d");
+    const debugContext = debugCanvas.getContext("2d");
 
     context.fillStyle = "#000000";
     context.fillRect(0, 0, 0, 0);
@@ -237,7 +302,9 @@ const GameScreenCanvas = (props) => {
 
   return (
     <>
+      <canvas ref={debug} id="debug" />
       <canvas ref={scoreRef} id="score" />
+      <canvas ref={enemyRef} {...props} id="enemy" />
       <canvas ref={levelRef} {...props} id="level" />
       <canvas ref={gameScreenCanvasRef} {...props} />
     </>

@@ -8,9 +8,17 @@
     src: url("./Fonts/PressStart2P-vaV7.ttf");
 }
 
+#debug {
+    position: absolute;
+}
 
 #level {
     position: absolute;
+}
+
+#enemy {
+    position: absolute;
+    z-index: 5;
 }
 
 #score {
